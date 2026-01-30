@@ -178,7 +178,7 @@ def sample(
             uncond = model(x.float(), t_step, None)
             model_output = uncond + guidance_scale * (model_output - uncond)
 
-        x = (x - betas[t] * model_output / torch.sqrt(1 - alphas[t]))
+        x = x - betas[t] * model_output / torch.sqrt(1 - alphas[t])
         x = x / torch.sqrt(1 - betas[t]) + sigmas[t] * noise
 
         if t in save_steps:

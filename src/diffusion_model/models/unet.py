@@ -121,9 +121,7 @@ class CNNBlock(nn.Module):
             nn.SiLU(),
         )
         self.gn_in = (
-            nn.GroupNorm(8, in_channels)
-            if in_channels % 8 == 0
-            else nn.GroupNorm(1, in_channels)
+            nn.GroupNorm(8, in_channels) if in_channels % 8 == 0 else nn.GroupNorm(1, in_channels)
         )
         self.gn_out = (
             nn.GroupNorm(8, out_channels)
