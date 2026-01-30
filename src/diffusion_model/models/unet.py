@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -73,7 +72,13 @@ class FastAttention(nn.Module):
 class AttentionBlock(nn.Module):
     """Self-attention block used within the U-Net."""
 
-    def __init__(self, channels: int, size: int, n_head: int = 4, fast_attention: bool = False) -> None:
+    def __init__(
+        self,
+        channels: int,
+        size: int,
+        n_head: int = 4,
+        fast_attention: bool = False,
+    ) -> None:
         super().__init__()
         self.channels = channels
         self.size = int(size)
@@ -111,9 +116,20 @@ class CNNBlock(nn.Module):
         super().__init__()
         self.time_layer = nn.Linear(t_emdim, out_channels)
         self.class_layer = nn.Linear(class_emdim, out_channels)
-        self.conv_layer = nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel, padding=padding), nn.SiLU())
-        self.gn_in = nn.GroupNorm(8, in_channels) if in_channels % 8 == 0 else nn.GroupNorm(1, in_channels)
-        self.gn_out = nn.GroupNorm(8, out_channels) if out_channels % 8 == 0 else nn.GroupNorm(1, out_channels)
+        self.conv_layer = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel, padding=padding),
+            nn.SiLU(),
+        )
+        self.gn_in = (
+            nn.GroupNorm(8, in_channels)
+            if in_channels % 8 == 0
+            else nn.GroupNorm(1, in_channels)
+        )
+        self.gn_out = (
+            nn.GroupNorm(8, out_channels)
+            if out_channels % 8 == 0
+            else nn.GroupNorm(1, out_channels)
+        )
         self.conv_layer_final = nn.Sequential(
             nn.Conv2d(out_channels, out_channels, kernel, padding=padding),
             nn.SiLU(),
@@ -123,7 +139,12 @@ class CNNBlock(nn.Module):
         if in_channels != out_channels:
             self.residual_conv_layer = nn.Conv2d(in_channels, out_channels, 1)
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        t: torch.Tensor,
+        c: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         t = self.time_layer(t)[:, :, None, None]
         c_proj = self.class_layer(c)[:, :, None, None] if c is not None else None
 
@@ -157,7 +178,12 @@ class UpSampleCNNBlock(nn.Module):
             class_emdim=class_emdim,
         )
         self.upsample = nn.ConvTranspose2d(in_channels, out_channels, (2, 2), 2)
-        self.cross_attention = nn.MultiheadAttention(out_channels, n_head, batch_first=True, dropout=DROPOUT)
+        self.cross_attention = nn.MultiheadAttention(
+            out_channels,
+            n_head,
+            batch_first=True,
+            dropout=DROPOUT,
+        )
         self.cross_attn_gn = nn.GroupNorm(8, out_channels)
         self.use_cross_attn = use_cross_attn
 
@@ -166,7 +192,7 @@ class UpSampleCNNBlock(nn.Module):
         x: torch.Tensor,
         res: torch.Tensor,
         t: torch.Tensor,
-        c: Optional[torch.Tensor] = None,
+        c: torch.Tensor | None = None,
     ) -> torch.Tensor:
         x = self.upsample(x)
         _, channels, width, height = x.shape
@@ -178,8 +204,10 @@ class UpSampleCNNBlock(nn.Module):
 
         attn_val = None
         if self.use_cross_attn:
-            normed_x = self.cross_attn_gn(x).reshape(-1, channels, height * width).swapaxes(1, 2)
-            normed_res = self.cross_attn_gn(res).reshape(-1, channels, height * width).swapaxes(1, 2)
+            normed_x = self.cross_attn_gn(x)
+            normed_x = normed_x.reshape(-1, channels, height * width).swapaxes(1, 2)
+            normed_res = self.cross_attn_gn(res)
+            normed_res = normed_res.reshape(-1, channels, height * width).swapaxes(1, 2)
             attn_val, _ = self.cross_attention(normed_x, normed_res, normed_res)
             attn_val = attn_val.swapaxes(2, 1).reshape(-1, channels, width, height)
 
@@ -191,7 +219,13 @@ class UpSampleCNNBlock(nn.Module):
 
 
 class MidBlock(nn.Module):
-    def __init__(self, channel: int, pixel_size: int, t_emdim: int = 32, fast_attn: bool = False) -> None:
+    def __init__(
+        self,
+        channel: int,
+        pixel_size: int,
+        t_emdim: int = 32,
+        fast_attn: bool = False,
+    ) -> None:
         super().__init__()
         self.gn = nn.GroupNorm(8, channel) if channel % 8 == 0 else nn.GroupNorm(1, channel)
         self.act = nn.SiLU()
@@ -206,7 +240,12 @@ class MidBlock(nn.Module):
         )
         self.class_mlp = nn.Embedding(10, t_emdim)
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        t: torch.Tensor,
+        c: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         t = self.time_mlp(t)
         if c is not None:
             c = self.class_mlp(c)
@@ -245,20 +284,52 @@ class Encoder(nn.Module):
         )
         for i in range(self.num_blocks - 1):
             self.block.append(
-                CNNBlock(in_channel_list[i], out_channels=in_channel_list[i + 1], t_emdim=t_emdim, class_emdim=class_emdim)
+                CNNBlock(
+                    in_channel_list[i],
+                    out_channels=in_channel_list[i + 1],
+                    t_emdim=t_emdim,
+                    class_emdim=class_emdim,
+                )
             )
             self.block.append(
-                CNNBlock(in_channel_list[i + 1], out_channels=in_channel_list[i + 1], t_emdim=t_emdim, class_emdim=class_emdim)
+                CNNBlock(
+                    in_channel_list[i + 1],
+                    out_channels=in_channel_list[i + 1],
+                    t_emdim=t_emdim,
+                    class_emdim=class_emdim,
+                )
             )
-            new_size = calc_pixel_size(pixel_sizes[-1], kernel=3, padding=1, stride=1, layer_num=i)
-            self.attn_block.append(AttentionBlock(in_channel_list[i + 1], new_size, fast_attention=fast_attn))
+            new_size = calc_pixel_size(
+                pixel_sizes[-1],
+                kernel=3,
+                padding=1,
+                stride=1,
+                layer_num=i,
+            )
+            self.attn_block.append(
+                AttentionBlock(
+                    in_channel_list[i + 1],
+                    new_size,
+                    fast_attention=fast_attn,
+                )
+            )
             pixel_sizes.append(new_size)
 
         self.block.append(
-            CNNBlock(in_channels=in_channel_list[-1], out_channels=output_size, t_emdim=t_emdim, class_emdim=class_emdim)
+            CNNBlock(
+                in_channels=in_channel_list[-1],
+                out_channels=output_size,
+                t_emdim=t_emdim,
+                class_emdim=class_emdim,
+            )
         )
         self.block.append(
-            CNNBlock(in_channels=output_size, out_channels=output_size, t_emdim=t_emdim, class_emdim=class_emdim)
+            CNNBlock(
+                in_channels=output_size,
+                out_channels=output_size,
+                t_emdim=t_emdim,
+                class_emdim=class_emdim,
+            )
         )
         self.pool = nn.MaxPool2d(2)
         self.time_mlp = nn.Sequential(
@@ -268,7 +339,12 @@ class Encoder(nn.Module):
         )
         self.class_mlp = nn.Embedding(10, class_emdim)
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor] = None) -> tuple[torch.Tensor, list[torch.Tensor]]:
+    def forward(
+        self,
+        x: torch.Tensor,
+        t: torch.Tensor,
+        c: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, list[torch.Tensor]]:
         residuals: list[torch.Tensor] = []
         x = self.gn(x)
         t = self.time_mlp(t)
@@ -326,16 +402,54 @@ class Decoder(nn.Module):
                 )
             )
             self.block.append(
-                CNNBlock(in_channel_list[i + 1], out_channels=in_channel_list[i + 1], t_emdim=t_emdim, class_emdim=class_emdim)
+                CNNBlock(
+                    in_channel_list[i + 1],
+                    out_channels=in_channel_list[i + 1],
+                    t_emdim=t_emdim,
+                    class_emdim=class_emdim,
+                )
             )
-            new_size = calc_pixel_size(pixel_sizes[-1], kernel=3, padding=1, stride=1, down=False, layer_num=i + 1)
-            self.attn_block.append(AttentionBlock(in_channel_list[i + 1], new_size, fast_attention=fast_attn))
+            new_size = calc_pixel_size(
+                pixel_sizes[-1],
+                kernel=3,
+                padding=1,
+                stride=1,
+                down=False,
+                layer_num=i + 1,
+            )
+            self.attn_block.append(
+                AttentionBlock(
+                    in_channel_list[i + 1],
+                    new_size,
+                    fast_attention=fast_attn,
+                )
+            )
             pixel_sizes.append(new_size)
 
-        self.block.append(CNNBlock(in_channel_list[i + 1], out_channels=in_channel_list[i + 1], t_emdim=t_emdim, class_emdim=class_emdim))
-        self.block.append(CNNBlock(in_channel_list[i + 1], out_channels=output_size, t_emdim=t_emdim, class_emdim=class_emdim))
+        self.block.append(
+            CNNBlock(
+                in_channel_list[i + 1],
+                out_channels=in_channel_list[i + 1],
+                t_emdim=t_emdim,
+                class_emdim=class_emdim,
+            )
+        )
+        self.block.append(
+            CNNBlock(
+                in_channel_list[i + 1],
+                out_channels=output_size,
+                t_emdim=t_emdim,
+                class_emdim=class_emdim,
+            )
+        )
 
-    def forward(self, x: torch.Tensor, residuals: list[torch.Tensor], t: torch.Tensor, c: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        residuals: list[torch.Tensor],
+        t: torch.Tensor,
+        c: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         num_residuals = len(residuals)
         t = self.time_mlp(t)
         if c is not None:
@@ -366,7 +480,7 @@ class UNet(nn.Module):
         class_emdim: int = 32,
         *,
         pixel_dims_enc: int = 128,
-        pixel_dims_dec: Optional[int] = None,
+        pixel_dims_dec: int | None = None,
         use_cross_attn: bool = False,
         use_mid_blocks: bool = True,
         fast_attn: bool = False,
@@ -402,9 +516,19 @@ class UNet(nn.Module):
                 num_convs=1,
                 layer_num=len(enc_channel_list),
             )
-            self.mid_blocks = MidBlock(enc_channel_list[-1], final_pixel_size, t_emdim, fast_attn=fast_attn)
+            self.mid_blocks = MidBlock(
+                enc_channel_list[-1],
+                final_pixel_size,
+                t_emdim,
+                fast_attn=fast_attn,
+            )
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        t: torch.Tensor,
+        c: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         enc_out, residuals = self.encoder(x, t, c)
         if self.use_mid_blocks:
             enc_out = self.mid_blocks(enc_out, t, c)
@@ -419,8 +543,8 @@ def save_only_model(model: nn.Module, path: str) -> None:
 def load_model(
     path: str,
     model: nn.Module,
-    optimizer: Optional[torch.optim.Optimizer] = None,
-    scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+    optimizer: torch.optim.Optimizer | None = None,
+    scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
 ):
     """Load model and optional optimizer/scheduler states."""
     checkpoint = torch.load(path, map_location="cpu")
