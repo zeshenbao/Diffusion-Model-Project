@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env/
+.envrc
+
+# data and outputs
+/data/
+mnist_data/
+cifar_data/
+LFW_data/
+checkpoints/
+outputs/
+*.pth
+*.pt
+
+# notebooks
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
