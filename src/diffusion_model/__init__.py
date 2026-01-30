@@ -8,11 +8,10 @@ from diffusion_model.diffusion import (
     linear_beta_schedule,
     sample,
 )
-from diffusion_model.models.unet import UNet, U_Net
+from diffusion_model.models.unet import UNet
 
 __all__ = [
     "UNet",
-    "U_Net",
     "apply_noise",
     "calc_alphas",
     "cosine_schedule",

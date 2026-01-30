@@ -47,18 +47,6 @@ class SinusoidalPositionEmbeddings(nn.Module):
         return embeddings
 
 
-class ClassEmbedding(nn.Module):
-    """Legacy class embedding helper (kept for backwards compatibility)."""
-
-    def __init__(self, dim: int, onehot: bool = False) -> None:
-        super().__init__()
-        self.dim = dim
-        self.layer = nn.Linear(1, self.dim) if not onehot else nn.Identity()
-
-    def forward(self, c: torch.Tensor) -> torch.Tensor:
-        return self.layer(c)
-
-
 class FastAttention(nn.Module):
     def __init__(self, channels: int, n_head: int) -> None:
         super().__init__()
@@ -96,14 +84,6 @@ class AttentionBlock(nn.Module):
             self.fast_attn = False
             self.attn = nn.MultiheadAttention(channels, n_head, batch_first=True, dropout=DROPOUT)
         self.group_norm = nn.GroupNorm(8, channels)
-
-        # Legacy layer for compatibility with older checkpoints.
-        self.fcl = nn.Sequential(
-            nn.LayerNorm([channels]),
-            nn.Linear(channels, channels),
-            nn.SiLU(),
-            nn.Linear(channels, channels),
-        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         normed = self.group_norm(x)
@@ -429,9 +409,6 @@ class UNet(nn.Module):
         if self.use_mid_blocks:
             enc_out = self.mid_blocks(enc_out, t, c)
         return self.decoder(enc_out, residuals, t, c)
-
-
-U_Net = UNet
 
 
 def save_only_model(model: nn.Module, path: str) -> None:
