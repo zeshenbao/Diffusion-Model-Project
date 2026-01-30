@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import random
-from typing import Optional
 
 import numpy as np
 import torch
 
 
-def resolve_device(device: Optional[str | torch.device] = None) -> torch.device:
+def resolve_device(device: str | torch.device | None = None) -> torch.device:
     """Resolve a torch device, defaulting to CUDA when available."""
     if device is None:
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")

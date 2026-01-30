@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import math
-from typing import Iterable, Optional
+from collections.abc import Iterable
+from copy import deepcopy
 
 import torch
 from torch import nn
@@ -23,7 +23,7 @@ def cosine_schedule(
     *,
     s: float = 0.008,
     max_beta: float = 0.999,
-    device: Optional[str | torch.device] = None,
+    device: str | torch.device | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Cosine schedule from https://arxiv.org/abs/2102.09672.
 
@@ -47,7 +47,7 @@ def linear_beta_schedule(
     *,
     beta_start: float = 1e-4,
     beta_end: float = 2e-2,
-    device: Optional[str | torch.device] = None,
+    device: str | torch.device | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Linear beta schedule."""
     device = resolve_device(device)
@@ -82,7 +82,7 @@ def apply_noise(x: torch.Tensor, alpha: torch.Tensor) -> tuple[torch.Tensor, tor
 
 def ema_param_update(
     model: nn.Module,
-    ema_copy: Optional[nn.Module] = None,
+    ema_copy: nn.Module | None = None,
     *,
     decay: float = 0.9999,
 ) -> nn.Module:
@@ -94,7 +94,7 @@ def ema_param_update(
     else:
         ema_copy.eval()
 
-    for ema_param, param in zip(ema_copy.parameters(), model.parameters()):
+    for ema_param, param in zip(ema_copy.parameters(), model.parameters(), strict=False):
         ema_param.data.mul_(decay).add_(param.data, alpha=1 - decay)
 
     return ema_copy
@@ -106,13 +106,13 @@ def sample(
     betas: torch.Tensor,
     *,
     shape: tuple[int, int, int, int],
-    num_steps: Optional[int] = None,
+    num_steps: int | None = None,
     num_images: int = 10,
-    start_img: Optional[torch.Tensor] = None,
-    alphas: Optional[torch.Tensor] = None,
-    class_labels: Optional[Iterable[int]] = None,
+    start_img: torch.Tensor | None = None,
+    alphas: torch.Tensor | None = None,
+    class_labels: Iterable[int] | None = None,
     guidance_scale: float = 0.0,
-    device: Optional[str | torch.device] = None,
+    device: str | torch.device | None = None,
     progress: bool = True,
 ) -> list[torch.Tensor]:
     """Generate samples from a trained diffusion model.
@@ -142,7 +142,11 @@ def sample(
     x = torch.randn(size=shape, device=device) if start_img is None else start_img.to(device)
 
     if class_labels is not None:
-        class_labels = torch.tensor(list(class_labels), dtype=torch.int64, device=device).view(-1, 1)
+        class_labels = torch.tensor(
+            list(class_labels),
+            dtype=torch.int64,
+            device=device,
+        ).view(-1, 1)
 
     if start_img is not None:
         t_start = torch.full((x.shape[0], 1), num_steps - 1, device=device)

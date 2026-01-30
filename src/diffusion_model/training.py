@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import torch
 from torch import nn
@@ -19,19 +18,19 @@ from diffusion_model.utils import resolve_device
 class TrainState:
     epoch: int
     losses: list[float]
-    save_interval: Optional[int] = None
+    save_interval: int | None = None
 
 
 def save_checkpoint(
     path: str | Path,
     model: nn.Module,
     *,
-    optimizer: Optional[torch.optim.Optimizer] = None,
-    scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+    optimizer: torch.optim.Optimizer | None = None,
+    scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
     epoch: int = 0,
-    losses: Optional[list[float]] = None,
-    save_interval: Optional[int] = None,
-    ema_model: Optional[nn.Module] = None,
+    losses: list[float] | None = None,
+    save_interval: int | None = None,
+    ema_model: nn.Module | None = None,
 ) -> None:
     """Save model (and optional optimizer/scheduler) to disk."""
     path = Path(path)
@@ -59,9 +58,9 @@ def load_checkpoint(
     path: str | Path,
     model: nn.Module,
     *,
-    optimizer: Optional[torch.optim.Optimizer] = None,
-    scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
-    map_location: Optional[str | torch.device] = "cpu",
+    optimizer: torch.optim.Optimizer | None = None,
+    scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
+    map_location: str | torch.device | None = "cpu",
 ) -> TrainState:
     """Load model (and optional optimizer/scheduler) from disk."""
     checkpoint = torch.load(path, map_location=map_location)
@@ -84,17 +83,17 @@ def train(
     optimizer: torch.optim.Optimizer,
     *,
     epochs: int = 10,
-    alphas: Optional[torch.Tensor] = None,
-    device: Optional[str | torch.device] = None,
-    ema_model: Optional[nn.Module] = None,
+    alphas: torch.Tensor | None = None,
+    device: str | torch.device | None = None,
+    ema_model: nn.Module | None = None,
     clip_grad: float = 1.0,
     use_class_cond: bool = True,
-    scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+    scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
     start_epoch: int = 0,
-    losses: Optional[list[float]] = None,
-    save_interval: Optional[int] = None,
-    save_path: Optional[str | Path] = None,
-) -> tuple[list[float], Optional[nn.Module]]:
+    losses: list[float] | None = None,
+    save_interval: int | None = None,
+    save_path: str | Path | None = None,
+) -> tuple[list[float], nn.Module | None]:
     """Train the diffusion model for the given number of epochs."""
     device = resolve_device(device)
     model = model.to(device)

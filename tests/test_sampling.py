@@ -1,5 +1,3 @@
-import torch
-
 from diffusion_model.diffusion import linear_beta_schedule, sample
 from diffusion_model.models.unet import UNet
 
