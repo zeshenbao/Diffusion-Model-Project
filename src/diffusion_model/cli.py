@@ -68,7 +68,11 @@ def train_cmd(args: argparse.Namespace) -> None:
     )
 
     total_steps = max(1, len(dataloader) * args.epochs)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total_steps, eta_min=args.eta_min)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=total_steps,
+        eta_min=args.eta_min,
+    )
 
     alphas, betas = linear_beta_schedule(
         args.time_steps,
@@ -80,7 +84,13 @@ def train_cmd(args: argparse.Namespace) -> None:
     losses = []
     start_epoch = 0
     if args.resume:
-        state = load_checkpoint(args.resume, model, optimizer=optimizer, scheduler=scheduler, map_location=device)
+        state = load_checkpoint(
+            args.resume,
+            model,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            map_location=device,
+        )
         losses = state.losses
         start_epoch = state.epoch
 
@@ -182,7 +192,12 @@ def build_parser() -> argparse.ArgumentParser:
     train_parser.add_argument("--t-embed-dim", type=int, default=32)
     train_parser.add_argument("--class-embed-dim", type=int, default=32)
     train_parser.add_argument("--use-cross-attn", action="store_true")
-    train_parser.add_argument("--no-mid-blocks", action="store_false", dest="use_mid_blocks", default=True)
+    train_parser.add_argument(
+        "--no-mid-blocks",
+        action="store_false",
+        dest="use_mid_blocks",
+        default=True,
+    )
     train_parser.add_argument("--fast-attn", action="store_true")
     train_parser.add_argument("--disable-class-cond", action="store_true")
     train_parser.add_argument("--use-ema", action="store_true")
@@ -209,7 +224,12 @@ def build_parser() -> argparse.ArgumentParser:
     sample_parser.add_argument("--t-embed-dim", type=int, default=32)
     sample_parser.add_argument("--class-embed-dim", type=int, default=32)
     sample_parser.add_argument("--use-cross-attn", action="store_true")
-    sample_parser.add_argument("--no-mid-blocks", action="store_false", dest="use_mid_blocks", default=True)
+    sample_parser.add_argument(
+        "--no-mid-blocks",
+        action="store_false",
+        dest="use_mid_blocks",
+        default=True,
+    )
     sample_parser.add_argument("--fast-attn", action="store_true")
     sample_parser.add_argument("--no-progress", action="store_true")
     sample_parser.add_argument("--device", type=str)

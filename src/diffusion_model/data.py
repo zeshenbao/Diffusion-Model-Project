@@ -29,11 +29,26 @@ def create_dataloader(
     )
 
     if dataset == "mnist":
-        ds = datasets.MNIST(root=f"{data_dir}/mnist", train=True, transform=transform, download=download)
+        ds = datasets.MNIST(
+            root=f"{data_dir}/mnist",
+            train=True,
+            transform=transform,
+            download=download,
+        )
     elif dataset == "cifar":
-        ds = datasets.CIFAR10(root=f"{data_dir}/cifar", train=True, transform=transform, download=download)
+        ds = datasets.CIFAR10(
+            root=f"{data_dir}/cifar",
+            train=True,
+            transform=transform,
+            download=download,
+        )
     elif dataset == "lfw":
-        ds = datasets.LFWPeople(root=f"{data_dir}/lfw", split="train", transform=transform, download=download)
+        ds = datasets.LFWPeople(
+            root=f"{data_dir}/lfw",
+            split="train",
+            transform=transform,
+            download=download,
+        )
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
