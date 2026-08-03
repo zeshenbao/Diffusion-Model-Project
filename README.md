@@ -1,6 +1,6 @@
 # Diffusion Model Project
 
-A production-minded refactor of a Denoising Diffusion Probabilistic Model (DDPM) with a U-Net backbone and attention. The codebase is packaged for reuse, tested, and CI-ready.
+Denoising Diffusion Probabilistic Model (DDPM) with a U-Net backbone and attention.
 
 ## Highlights
 
