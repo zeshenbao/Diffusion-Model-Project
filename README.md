@@ -2,6 +2,10 @@
 
 Denoising Diffusion Probabilistic Model (DDPM) with a U-Net backbone and attention.
 
+## Project Report
+
+Read the full 12-page technical report, [*Pic-AI-sso, Because More is More*](docs/project-report.pdf), for the model design, training methodology, experiments, evaluation, and results.
+
 ## Highlights
 
 - Clean `src/` package layout with reusable modules.
@@ -25,6 +29,8 @@ Denoising Diffusion Probabilistic Model (DDPM) with a U-Net backbone and attenti
 │       └── models/
 │           └── unet.py
 ├── tests/
+├── docs/
+│   └── project-report.pdf
 ├── .github/workflows/ci.yml
 ├── pyproject.toml
 └── README.md
